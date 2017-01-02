@@ -1,0 +1,6 @@
+name = Content Restore
+description = "Create restore points and be able to rollback content to their state at that point."
+core = 7.x
+dependencies[] = entity
+configure = admin/config/administration/content_restore
+version = "7.x-1.0"

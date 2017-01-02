@@ -1,0 +1,108 @@
+<?php
+
+function content_restore_schema() {
+  $schema['content_restore_point'] = array(
+    'description' => 'The base table for content restore points.',
+    'fields' => array(
+      'pid' => array(
+        'description' => 'The primary identifier for a content restore point.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'entity_id' => array(
+        'description' => 'The entity id of the entity being subject of restore point.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+      ),
+      'entity_type' => array(
+        'description' => 'The entity type of the entity(ies) being subject of restore point.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'entity_bundle' => array(
+        'description' => 'The bundle of the entity(ies) being subject of restore point.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'title' => array(
+        'description' => 'The title of this restore point.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'enabled' => array(
+        'description' => 'Wether this restore point is active or not',
+        'type' => 'int',
+      ),
+      'on_insert' => array(
+        'description' => 'Wether this restore point acts on inserted items.',
+        'type' => 'int',
+      ),
+      'on_update' => array(
+        'description' => 'Wether this restore point acts on updated items',
+        'type' => 'int',
+      ),
+      'on_delete' => array(
+        'description' => 'Wether this restore point acts on deleted items',
+        'type' => 'int',
+      ),
+      'config' => array(
+        'description' => 'Additional configurations for this point.',
+        'type' => 'blob',
+      ),
+    ),
+    'primary key' => array('pid'),
+  );
+  $schema['content_restore_items'] = array(
+    'description' => 'The table to store recoverable content items.',
+    'fields' => array(
+      'pid' => array(
+        'description' => 'The primary identifier for the associated content restore point.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'entity_id' => array(
+        'description' => 'The entity id of the modified entity.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'entity_type' => array(
+        'description' => 'The entity type of the modified entity.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'entity_bundle' => array(
+        'description' => 'The bundle of the modified entity.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'operation' => array(
+        'description' => 'The operation performed.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'data' => array(
+        'description' => 'Data to restore.',
+        'type' => 'blob',
+      ),
+    ),
+    'unique keys' => array(
+      'pid_entity_id' => array('pid', 'entity_id'),
+    ),
+    'foreign keys' => array(
+      'content_restore_point' => array(
+        'table' => 'content_restore_point',
+        'columns' => array('pid' => 'pid'),
+      ),
+    ),
+    'primary key' => array('pid', 'entity_id'),
+  );
+  return $schema;
+}

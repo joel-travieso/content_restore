@@ -1,0 +1,163 @@
+<?php
+/**
+ * @file
+ * Logic for the module functionality.
+ */
+module_load_include('inc', 'content_restore', 'content_restore_point.controller');
+module_load_include('inc', 'content_restore', 'content_restore_point.utility');
+
+/**
+ * Implements hook_menu().
+ */
+function content_restore_menu(){
+  $items['admin/structure/content_restore_point'] = array(
+    'title' => 'Content Restore Point',
+    'description' => 'Manage Content Restore Point structure',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('content_restore_point_info_form'),
+    'access arguments' => array('administer restore points'),
+    'file' => 'content_restore_point.admin.inc',
+  );
+  $items['admin/structure/content_restore_point/add'] = array(
+    'title' => 'Add restore point',
+    'page callback' => 'content_restore_point_add',
+    'access arguments' => array('create restore points'),
+    'file' => 'content_restore_point.entity.inc',
+    'type' => MENU_LOCAL_ACTION,
+  );
+  $items['admin/structure/content_restore_point/manage/%content_restore_point'] = array(
+    'title callback' => 'content_restore_point_page_title',
+    'title arguments' => array(4),
+    'page callback' => 'content_restore_point_page_view',
+    'page arguments' => array(4),
+    'access arguments' => array('view restore points'),
+    'file' => 'content_restore_point.entity.inc',
+  );
+  $items['admin/structure/content_restore_point/manage/%content_restore_point/delete'] = array(
+    'title' => 'Delete',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('content_restore_point_delete_confirm', 4),
+    'access arguments' => array('delete restore points'),
+    'weight' => 1,
+    'type' => MENU_LOCAL_TASK,
+    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+    'file' => 'content_restore_point.entity.inc',
+  );
+  $items['admin/structure/content_restore_point/manage/%content_restore_point/restore'] = array(
+    'title' => 'Restore',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('content_restore_point_restore_confirm', 4),
+    'access arguments' => array('restore restore points'),
+    'weight' => 1,
+    'type' => MENU_LOCAL_TASK,
+    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+    'file' => 'content_restore_point.entity.inc',
+  );
+  $items['admin/structure/content_restore_point/manage/%content_restore_point/enable'] = array(
+    'title callback' => 'content_restore_point_enable_page_title',
+    'title arguments' => array(4),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('content_restore_point_enable_confirm', 4, 6),
+    'access arguments' => array('administer restore points'),
+    'weight' => 1,
+    'type' => MENU_LOCAL_TASK,
+    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+    'file' => 'content_restore_point.entity.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_entity_info().
+ */
+function content_restore_entity_info() {
+  $content_restore_point['content_restore_point'] = array(
+    'label' => t('Content Restore Point'),
+    'controller class' => 'ContentRestorePointController',
+    'base table' => 'content_restore_point',
+    'uri callback' => 'content_restore_point_uri',
+    'fieldable' => TRUE,
+    'entity keys' => array(
+      'id' => 'pid',
+    ),
+    'static cache' => TRUE,
+    'bundles' => array(
+      'content_restore_point'=> array(
+        'label' => 'ContentRestorePoint',
+        'admin' => array(
+          'path' => 'admin/structure/content_restore_point/manage',
+          'access arguments' => array('administer restore points'),
+        ),
+      ),
+    ),
+    'view modes' => array(
+      'full' => array(
+        'label' => t('Full Content Restore Point'),
+        'custom settings' =>  FALSE,
+      ),
+    )
+  );
+  return $content_restore_point;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function content_restore_permission(){
+    return array(
+    'administer restore points' =>  array(
+      'title' => t('Administer restore points'),
+      'restrict access' => TRUE,
+    ),
+    'view restore points' => array(
+      'title' => t('View restore points'),
+    ),
+    'create restore points' => array(
+      'title' => t('Create restore points'),
+    ),
+    'delete restore points' => array(
+      'title' => t('Delete restore points'),
+    ),
+    'restore restore points' => array(
+      'title' => t('Restore restore points'),
+    ),
+  );
+}
+ 
+/**
+ * Implements hook_field_extra_fields.
+ */
+function content_restore_field_extra_fields() {
+  $return = array();
+  $return['content_restore_point']['content_restore_point'] = array(
+    'form' => array(
+      'title' => array(
+        'label' => t('Title'),
+        'description' => t('Title'),
+        'weight' => -1,
+      ),
+    ),
+  );
+  return $return;
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function content_restore_entity_insert($entity, $type) {
+  content_restore_store($entity, $type, 'insert');
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function content_restore_entity_update($entity, $type) {
+  content_restore_store($entity, $type, 'update');
+}
+
+/**
+ * Implements hook_entity_delete().
+ */
+function content_restore_entity_delete($entity, $type) {
+  content_restore_store($entity, $type, 'delete');
+}
