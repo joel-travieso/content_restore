@@ -5,11 +5,12 @@
  */
 
 /**
- * URI callback for CRP.
+ * URI callback for CRP entities.
  */
-function content_restore_point_uri($content_restore_point){
+function content_restore_point_uri($content_restore_point, $pid = NULL){
+  $pid = $pid ? $pid : $content_restore_point->pid;
   return array(
-    'path' => 'admin/structure/content_restore_point/manage/' . $content_restore_point->pid,
+    'path' => 'admin/structure/content_restore_point/manage/' . $pid,
   );
 }
 
@@ -52,18 +53,23 @@ function content_restore_point_enable_page_title($content_restore_point, $enable
  * Function to store changes done over content associated to corresponding CRPs in order to use it in restore later.
  */
 function content_restore_store($entity, $type, $operation) {
+  //Skip if changes are part or a restore process
   if (!empty($_SESSION['content_restore_restoring'])) {
     return;
   }
+  //Temporarily fix some weird issue (TODO: investigate)
   if (is_string($entity)) {
     $entity_tmp = $entity;
     $entity = $type;
     $type = $entity_tmp;
   }
+
   $entity_info = entity_extract_ids($type, $entity);
+  //OR subqueries to deal with the variable depth of granularity for CRP
   $type_or = db_or()->condition('entity_type', $type)->condition('entity_type', NULL);
   $bundle_or = db_or()->condition('entity_bundle', $entity_info[2])->condition('entity_bundle', NULL);
   $id_or = db_or()->condition('entity_id', $entity_info[0])->condition('entity_id', NULL);
+
   $result = db_select('content_restore_point', 'crp')
     ->fields('crp', array('pid'))
     ->condition('enabled', 1)
@@ -74,6 +80,7 @@ function content_restore_store($entity, $type, $operation) {
     ->execute()
     ->fetchAllAssoc('pid');
 
+  //The data to store depends on the operation applied. 
   $data = $operation == 'update' ? $entity->original : ($operation == 'delete' ? $entity : NULL) ;
   foreach ($result as $pid => $value) {
     try {
@@ -88,6 +95,8 @@ function content_restore_store($entity, $type, $operation) {
         ))
         ->execute();
     }
-    catch (Exception $e) {}
+    catch (Exception $e) {
+      //TODO: watchdog or something..
+    }
   }
 }

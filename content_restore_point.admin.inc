@@ -19,6 +19,7 @@ function content_restore_point_info_form($form, &$form_state) {
     'operations' => t('Operations'),
   );
   
+  //Get restore points
   $result = db_select('content_restore_point', 'crp')
     ->fields('crp')
     ->execute()
@@ -39,10 +40,12 @@ function content_restore_point_info_form($form, &$form_state) {
       }
     }
     $active_operations = implode(', ', $active_operations);
+    $info_form_path = current_path();
+    $toggle_label = content_restore_point_enable_page_title(NULL, $data->enabled);
     $operations = array(
-      l(content_restore_point_enable_page_title(NULL, $data->enabled), "admin/structure/content_restore_point/manage/$pid/enable"),
-      l(t('delete'), "admin/structure/content_restore_point/manage/$pid/delete"),
-      l(t('restore'), "admin/structure/content_restore_point/manage/$pid/restore"),
+      l($toggle_label, "admin/structure/content_restore_point/manage/$pid/enable", array('query' => array('destination' => $info_form_path))),
+      l(t('delete'), "admin/structure/content_restore_point/manage/$pid/delete", array('query' => array('destination' => $info_form_path))),
+      l(t('restore'), "admin/structure/content_restore_point/manage/$pid/restore", array('query' => array('destination' => $info_form_path))),
     );
     $options[$pid] = array(
       'title' => array(
@@ -60,6 +63,7 @@ function content_restore_point_info_form($form, &$form_state) {
       'operations' =>  implode(' | ', $operations),
     );
   }
+  //Bulk operations
   $form['operation'] = array(
     '#type' => 'select',
     '#required' => TRUE,
@@ -111,6 +115,5 @@ function content_restore_point_info_form_submit($form, &$form_state) {
         content_restore_point_restore($pids);
         break;
     }
-    cache_clear_all();
   }
 }

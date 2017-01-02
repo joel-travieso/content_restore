@@ -9,14 +9,12 @@
  */
 function content_restore_point_enable_confirm($form, &$form_state, $content_restore_point, $enable) {
   $action = content_restore_point_enable_page_title($content_restore_point);
-  $form['#content_restore_point'] = $content_restore_point;
-  // Always provide entity id in the same form key as in the entity edit form.
   $form['pid'] = array('#type' => 'value', '#value' => $content_restore_point->pid);
   $form['enabled'] = array('#type' => 'value', '#value' => abs($content_restore_point->enabled - 1));
   return confirm_form($form,
     t("Are you sure you want to $action %title?", array('%title' => $content_restore_point->title)),
     'admin/structure/content_restore_point/manage/' . $content_restore_point->pid,
-    t('You can undo this later'),
+    t('You can change this back later'),
     ucfirst(t($action)),
     t('Cancel')
   );
@@ -26,8 +24,6 @@ function content_restore_point_enable_confirm($form, &$form_state, $content_rest
  * Page callback for the CRP deletion confirmation page.
  */
 function content_restore_point_delete_confirm($form, &$form_state, $content_restore_point) {
-  $form['#content_restore_point'] = $content_restore_point;
-  // Always provide entity id in the same form key as in the entity edit form.
   $form['pid'] = array('#type' => 'value', '#value' => $content_restore_point->pid);
   return confirm_form($form,
     t('Are you sure you want to delete %title?', array('%title' => $content_restore_point->title)),
@@ -42,8 +38,6 @@ function content_restore_point_delete_confirm($form, &$form_state, $content_rest
  * Page callback for the CRP restore confirmation page.
  */
 function content_restore_point_restore_confirm($form, &$form_state, $content_restore_point) {
-  $form['#content_restore_point'] = $content_restore_point;
-  // Always provide entity id in the same form key as in the entity edit form.
   $form['pid'] = array('#type' => 'value', '#value' => $content_restore_point->pid);
   return confirm_form($form,
     t('Are you sure you want to restore %title?', array('%title' => $content_restore_point->title)),
@@ -60,9 +54,8 @@ function content_restore_point_restore_confirm($form, &$form_state, $content_res
 function content_restore_point_enable_confirm_submit($form, &$form_state) {
   if ($form_state['values']['confirm']) {
     content_restore_point_toggle($form_state['values']['pid'], $form_state['values']['enabled']);
-    cache_clear_all();
   }
-  $form_state['redirect'] = 'admin/structure/content_restore_point';
+  $form_state['redirect'] = content_restore_point_uri(NULL, $form_state['values']['pid']);
 }
 
 /**
@@ -71,7 +64,6 @@ function content_restore_point_enable_confirm_submit($form, &$form_state) {
 function content_restore_point_delete_confirm_submit($form, &$form_state) {
   if ($form_state['values']['confirm']) {
     content_restore_point_delete($form_state['values']['pid']);
-    cache_clear_all();
   }
   $form_state['redirect'] = 'admin/structure/content_restore_point';
 }
@@ -84,7 +76,7 @@ function content_restore_point_restore_confirm_submit($form, &$form_state) {
     content_restore_point_restore($form_state['values']['pid']);
     cache_clear_all();
   }
-  $form_state['redirect'] = 'admin/structure/content_restore_point';
+  $form_state['redirect'] = content_restore_point_uri(NULL, $form_state['values']['pid']);
 }
 
 /**
@@ -104,11 +96,11 @@ function content_restore_point_delete($pid){
   $transaction = db_transaction();
   try {
     db_delete('content_restore_items')
-    ->condition('pid', $pid)
-    ->execute();
+      ->condition('pid', $pid)
+      ->execute();
     db_delete('content_restore_point')
-    ->condition('pid', $pid)
-    ->execute();
+      ->condition('pid', $pid)
+      ->execute();
   }
   catch (Exception $e) {
     $transaction->rollback();
@@ -130,6 +122,7 @@ function content_restore_point_restore($pid){
     ->condition('pid', $pid)
     ->execute();
 
+  //A flag to avoid changes part of this restoration process to be recursively stored as 'to restore' changes
   $_SESSION['content_restore_restoring'] = TRUE;
 
   while ($row = $result->fetchAssoc()) {
@@ -226,9 +219,9 @@ function content_restore_point_add_form($form, &$form_state, $content_restore_po
     '#value' => t('Save'),
     '#weight' => 100,
   );
-  
+
   field_attach_form('content_restore_point', $content_restore_point, $form, $form_state);
-  
+
   return $form;
 }
 
@@ -236,8 +229,8 @@ function content_restore_point_add_form($form, &$form_state, $content_restore_po
  * Validation handler for the CRP add form.
  */
 function content_restore_point_add_form_validate($form, &$form_state) {
-  $content_restore_point_submisttion = (object) $form_state['values'];
-  field_attach_form_validate('content_restore_point', $content_restore_point_submisttion, $form, $form_state);
+  $content_restore_point_submission = (object) $form_state['values'];
+  field_attach_form_validate('content_restore_point', $content_restore_point_submission, $form, $form_state);
 }
 
 /**
@@ -263,7 +256,6 @@ function content_restore_point_save(&$content_restore_point) {
   return entity_get_controller('content_restore_point')->save($content_restore_point);
 }
 
-
 /**
  * Page callback for individual CRP page.
  */
@@ -276,10 +268,12 @@ function content_restore_point_page_view($content_restore_point, $view_mode = 'f
     'bundle' => t('Bundle'),
     'operation' => t('Operation'),
   );
+
   $result = db_select('content_restore_items', 'cri')
     ->fields('cri')
     ->condition('pid', $content_restore_point->pid)
     ->execute();
+
   $rows =  array();
   while ($row = $result->fetchAssoc()) {
     $entity = entity_load($row['entity_type'], array($row['entity_id']));
@@ -298,7 +292,8 @@ function content_restore_point_page_view($content_restore_point, $view_mode = 'f
     '#rows' => $rows,
     '#empty' =>t('Your table is empty'),
   );
-  $content_restore_point->content['description'] = $table_element;
+
+  $content_restore_point->content['items'] = $table_element;
  
   // Build fields content.
   field_attach_prepare_view('content_restore_point', array($content_restore_point->pid => $content_restore_point), $view_mode);
@@ -307,4 +302,3 @@ function content_restore_point_page_view($content_restore_point, $view_mode = 'f
  
   return $content_restore_point->content;
 }
-

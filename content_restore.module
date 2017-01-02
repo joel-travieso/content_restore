@@ -68,6 +68,30 @@ function content_restore_menu(){
 }
 
 /**
+ * Implements hook_permission().
+ */
+function content_restore_permission(){
+  return array(
+    'administer restore points' =>  array(
+      'title' => t('Administer restore points'),
+      'restrict access' => TRUE,
+    ),
+    'view restore points' => array(
+      'title' => t('View restore points'),
+    ),
+    'create restore points' => array(
+      'title' => t('Create restore points'),
+    ),
+    'delete restore points' => array(
+      'title' => t('Delete restore points'),
+    ),
+    'restore restore points' => array(
+      'title' => t('Restore restore points'),
+    ),
+  );
+}
+
+/**
  * Implements hook_entity_info().
  */
 function content_restore_entity_info() {
@@ -98,47 +122,6 @@ function content_restore_entity_info() {
     )
   );
   return $content_restore_point;
-}
-
-/**
- * Implements hook_permission().
- */
-function content_restore_permission(){
-    return array(
-    'administer restore points' =>  array(
-      'title' => t('Administer restore points'),
-      'restrict access' => TRUE,
-    ),
-    'view restore points' => array(
-      'title' => t('View restore points'),
-    ),
-    'create restore points' => array(
-      'title' => t('Create restore points'),
-    ),
-    'delete restore points' => array(
-      'title' => t('Delete restore points'),
-    ),
-    'restore restore points' => array(
-      'title' => t('Restore restore points'),
-    ),
-  );
-}
- 
-/**
- * Implements hook_field_extra_fields.
- */
-function content_restore_field_extra_fields() {
-  $return = array();
-  $return['content_restore_point']['content_restore_point'] = array(
-    'form' => array(
-      'title' => array(
-        'label' => t('Title'),
-        'description' => t('Title'),
-        'weight' => -1,
-      ),
-    ),
-  );
-  return $return;
 }
 
 /**
